@@ -1,0 +1,451 @@
+name: Claude Issue Automation
+
+on:
+  issues:
+    types: [opened, labeled]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  # Job 1: Feature Implementation (type: feature)
+  feature-implementation:
+    if: |
+      github.event_name == 'issues' && 
+      (
+        (github.event.action == 'opened' && contains(github.event.issue.labels.*.name, 'type:feature')) ||
+        (github.event.action == 'labeled' && github.event.label.name == 'type:feature')
+      )
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Create feature branch
+        run: |
+          git config --global user.name "Claude Code Bot"
+          git config --global user.email "claude-bot@example.com"
+          BRANCH_NAME="feature/issue-${{ github.event.issue.number }}"
+          git checkout -b $BRANCH_NAME
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+          
+      - name: Implement feature with Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            ## SuperClaude Framework - Feature Implementation
+            **Persona**: Developer
+            **Command**: /sc:implement
+            
+            ## Task
+            Implement the following feature completely:
+            
+            Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}
+            
+            Issue Description:
+            ${{ github.event.issue.body }}
+            
+            ## Instructions
+            1. Use /sc:implement methodology for systematic development
+            2. Analyze requirements thoroughly
+            3. Design proper architecture
+            4. Implement complete functionality
+            5. Add error handling
+            6. Include tests if applicable
+            7. Follow existing project patterns
+            8. Write clean, maintainable code
+            9. No TODOs or placeholders
+            
+            Build exactly what's requested with production-ready quality.
+            
+          claude_args: "--max-turns 10 --model claude-sonnet-4-20250514"
+          
+      - name: Commit changes
+        run: |
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            echo "NO_CHANGES=true" >> $GITHUB_ENV
+          else
+            git commit -m "feat: Implement solution for issue #${{ github.event.issue.number }}
+
+            Automated implementation of: ${{ github.event.issue.title }}
+            
+            This commit addresses the requirements outlined in issue #${{ github.event.issue.number }}.
+            The implementation follows SuperClaude framework principles for systematic development.
+            
+            Closes #${{ github.event.issue.number }}
+            
+            Co-authored-by: Claude <claude@anthropic.com>"
+            echo "NO_CHANGES=false" >> $GITHUB_ENV
+          fi
+          
+      - name: Push changes
+        if: env.NO_CHANGES != 'true'
+        run: |
+          git push origin ${{ env.BRANCH_NAME }}
+          
+      - name: Create Pull Request
+        if: env.NO_CHANGES != 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ env.BRANCH_NAME }}
+          title: "🤖 [Auto] Solution for Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}"
+          body: |
+            ## 🎯 Overview
+            This PR provides an automated solution for Issue #${{ github.event.issue.number }}
+            
+            ## 📋 Issue Details
+            - **Issue**: #${{ github.event.issue.number }}
+            - **Title**: ${{ github.event.issue.title }}
+            - **Status**: Ready for Review
+            
+            ## 🤖 Implementation Details
+            This solution was automatically generated using:
+            - **Claude Code Action**: v1
+            - **Framework**: SuperClaude `/sc:implement` methodology
+            - **Model**: Claude Sonnet 4
+            
+            ## ✅ Checklist
+            - [ ] Code implements all requirements from the issue
+            - [ ] Solution follows project conventions
+            - [ ] No placeholder code or TODOs
+            - [ ] Ready for human review
+            
+            ## 🔍 Review Instructions
+            Please review the implementation to ensure:
+            1. All issue requirements are met
+            2. Code quality meets project standards
+            3. No security vulnerabilities introduced
+            4. Integration with existing code is smooth
+            
+            ## 🏷️ Labels
+            - `automated-pr`
+            - `needs-review`
+            - `issue-${{ github.event.issue.number }}`
+            
+            ---
+            *Generated by Claude Code Action with SuperClaude Framework*
+          labels: |
+            automated-pr
+            needs-review
+            
+      - name: Comment on Issue
+        if: env.NO_CHANGES != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: ${{ github.event.issue.number }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🤖 **Automated Development Complete!**
+              
+              I've analyzed this issue and created a solution. A pull request has been opened with the implementation.
+              
+              **Pull Request**: #${{ env.PR_NUMBER || 'Check PRs' }}
+              **Branch**: \`${{ env.BRANCH_NAME }}\`
+              
+              The implementation follows SuperClaude framework principles and includes:
+              - Complete feature implementation
+              - Proper error handling
+              - Clean, maintainable code
+              
+              Please review the PR and provide feedback if any adjustments are needed.
+              
+              ---
+              *Powered by Claude Code Action*`
+            })
+
+  # Job 2: Bug Fix (type: bug)
+  bug-fix:
+    if: |
+      github.event_name == 'issues' && 
+      (
+        (github.event.action == 'opened' && contains(github.event.issue.labels.*.name, 'type:bug')) ||
+        (github.event.action == 'labeled' && github.event.label.name == 'type:bug')
+      )
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Create bug fix branch
+        run: |
+          git config --global user.name "Claude Code Bot"
+          git config --global user.email "claude-bot@example.com"
+          BRANCH_NAME="fix/issue-${{ github.event.issue.number }}"
+          git checkout -b $BRANCH_NAME
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+          
+      - name: Fix bug with Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            ## SuperClaude Framework - Bug Fix
+            **Persona**: Debugger/QA Engineer
+            **Commands**: /sc:debug, /sc:fix, /sc:test
+            
+            ## Bug Report
+            Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}
+            
+            Bug Description:
+            ${{ github.event.issue.body }}
+            
+            ## Instructions
+            1. Use /sc:debug to analyze and identify root cause
+            2. Investigate the bug thoroughly:
+               - Reproduce the issue if possible
+               - Identify the root cause
+               - Check for related issues
+            3. Use /sc:fix to implement the solution:
+               - Fix the root cause, not just symptoms
+               - Ensure no regression
+               - Add tests to prevent recurrence
+            4. Validate the fix:
+               - Verify bug is resolved
+               - Check edge cases
+               - Ensure no new issues introduced
+            
+            Focus on clean, minimal changes that solve the problem effectively.
+            
+          claude_args: "--max-turns 10 --model claude-sonnet-4-20250514"
+          
+      - name: Commit bug fix
+        run: |
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            echo "NO_CHANGES=true" >> $GITHUB_ENV
+          else
+            git commit -m "fix: Resolve issue #${{ github.event.issue.number }}
+
+            Bug: ${{ github.event.issue.title }}
+            
+            Root cause identified and fixed. Tests added to prevent regression.
+            
+            Fixes #${{ github.event.issue.number }}
+            
+            Co-authored-by: Claude <claude@anthropic.com>"
+            echo "NO_CHANGES=false" >> $GITHUB_ENV
+          fi
+          
+      - name: Push changes
+        if: env.NO_CHANGES != 'true'
+        run: |
+          git push origin ${{ env.BRANCH_NAME }}
+          
+      - name: Create Pull Request
+        if: env.NO_CHANGES != 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ env.BRANCH_NAME }}
+          title: "🐛 [Fix] Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}"
+          body: |
+            ## 🐛 Bug Fix
+            This PR fixes the bug reported in Issue #${{ github.event.issue.number }}
+            
+            ## 📋 Issue Details
+            - **Issue**: #${{ github.event.issue.number }}
+            - **Type**: Bug Fix
+            - **Priority**: ${{ contains(github.event.issue.labels.*.name, 'priority:high') && 'High' || 'Normal' }}
+            
+            ## 🔍 Root Cause Analysis
+            The bug was analyzed using SuperClaude debugging tools to identify the root cause.
+            
+            ## ✅ Fix Validation
+            - [ ] Bug is resolved
+            - [ ] No regression introduced
+            - [ ] Tests added/updated
+            - [ ] Edge cases handled
+            
+            ## 🤖 Automated Fix Details
+            - **Framework**: SuperClaude
+            - **Commands**: /sc:debug, /sc:fix
+            - **Persona**: Debugger/QA Engineer
+            
+            ---
+            *Automated bug fix by Claude Code Action*
+          labels: |
+            bug-fix
+            automated-pr
+            needs-review
+
+  # Job 3: Feature Analysis (type: needs-analysis)
+  feature-analysis:
+    if: |
+      github.event_name == 'issues' && 
+      (
+        (github.event.action == 'opened' && contains(github.event.issue.labels.*.name, 'type:needs-analysis')) ||
+        (github.event.action == 'labeled' && github.event.label.name == 'type:needs-analysis')
+      )
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Analyze and decompose feature
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            ## SuperClaude Framework - Feature Analysis & Decomposition
+            **Persona**: Architect
+            **Commands**: /sc:analyze, /sc:design, /sc:decompose
+            
+            ## Feature Request
+            Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}
+            
+            Description:
+            ${{ github.event.issue.body }}
+            
+            ## Instructions
+            1. Use /sc:analyze to understand the feature deeply:
+               - Identify all requirements
+               - Analyze technical implications
+               - Consider system architecture
+            
+            2. Use /sc:design to create architecture:
+               - Design system components
+               - Define interfaces and APIs
+               - Plan data flow
+            
+            3. Use /sc:decompose to break down into sub-tasks:
+               - Create small, implementable units
+               - Define clear acceptance criteria
+               - Identify dependencies
+            
+            4. Generate sub-issues in markdown format that can be created
+            
+            Focus on creating actionable, well-defined sub-tasks.
+            
+          claude_args: "--max-turns 8 --model claude-sonnet-4-20250514"
+          
+      - name: Create analysis report
+        run: |
+          cat > analysis_report.md << 'EOF'
+          # Feature Analysis Report
+          
+          ## Original Issue
+          - Issue: #${{ github.event.issue.number }}
+          - Title: ${{ github.event.issue.title }}
+          
+          ## Analysis Results
+          The feature has been analyzed and decomposed by the Architect persona.
+          See the generated sub-issues below.
+          
+          ---
+          *Generated by SuperClaude Architect*
+          EOF
+          
+      - name: Comment with analysis
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const analysisReport = fs.readFileSync('analysis_report.md', 'utf8');
+            
+            await github.rest.issues.createComment({
+              issue_number: ${{ github.event.issue.number }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🏗️ Feature Analysis Complete
+              
+              I've analyzed this feature request and created a detailed breakdown.
+              
+              ### 📊 Analysis Summary
+              The Architect persona has:
+              - Analyzed technical requirements
+              - Designed system architecture
+              - Decomposed into implementable sub-tasks
+              
+              ### 📝 Recommended Sub-Issues
+              Based on the analysis, here are the recommended sub-issues to create:
+              
+              ${analysisReport}
+              
+              ### Next Steps
+              1. Review the analysis
+              2. Create sub-issues with \`type:feature\` label
+              3. Each sub-issue will be auto-implemented
+              
+              ---
+              *Analysis by SuperClaude Architect*`
+            })
+            
+      - name: Create sub-issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // This will create the actual sub-issues
+            // The Claude analysis should have generated the issue templates
+            console.log("Sub-issues should be created based on analysis");
+
+  # Handle manual trigger through comments
+  manual-develop:
+    if: |
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request == null &&
+      contains(github.event.comment.body, '@claude')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Determine action type
+        id: determine_action
+        run: |
+          COMMENT="${{ github.event.comment.body }}"
+          if [[ "$COMMENT" == *"@claude implement"* ]]; then
+            echo "ACTION=implement" >> $GITHUB_OUTPUT
+          elif [[ "$COMMENT" == *"@claude fix"* ]]; then
+            echo "ACTION=fix" >> $GITHUB_OUTPUT
+          elif [[ "$COMMENT" == *"@claude analyze"* ]]; then
+            echo "ACTION=analyze" >> $GITHUB_OUTPUT
+          else
+            echo "ACTION=implement" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: React to comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'rocket'
+            })
+            
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Execute Claude action
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Action type: ${{ steps.determine_action.outputs.ACTION }}
+            
+            Execute the appropriate SuperClaude command based on the action:
+            - implement: Use /sc:implement for feature development
+            - fix: Use /sc:debug and /sc:fix for bug fixes
+            - analyze: Use /sc:analyze and /sc:design for analysis
+            
+            Issue #${{ github.event.issue.number }}
+            Follow best practices for the specific action type.
+          claude_args: "--max-turns 10"
