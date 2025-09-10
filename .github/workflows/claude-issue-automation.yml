@@ -70,7 +70,7 @@ jobs:
             
             Build exactly what's requested with production-ready quality.
             
-          claude_args: "--max-turns 10 --model claude-3-opus-20240229"
+          claude_args: "--max-turns 10 --model claude-opus-4-1-20250805"
           
       - name: Commit changes
         run: |
@@ -224,7 +224,7 @@ jobs:
             
             Focus on clean, minimal changes that solve the problem effectively.
             
-          claude_args: "--max-turns 10 --model claude-3-opus-20240229"
+          claude_args: "--max-turns 10 --model claude-opus-4-1-20250805"
           
       - name: Commit bug fix
         run: |
@@ -336,7 +336,7 @@ jobs:
             
             Focus on creating actionable, well-defined sub-tasks.
             
-          claude_args: "--max-turns 8 --model claude-3-opus-20240229"
+          claude_args: "--max-turns 8 --model claude-opus-4-1-20250805"
           
       - name: Create analysis report
         run: |
@@ -449,4 +449,4 @@ jobs:
             
             Issue #${{ github.event.issue.number }}
             Follow best practices for the specific action type.
-          claude_args: "--max-turns 10 --model claude-3-opus-20240229"
+          claude_args: "--max-turns 10 --model claude-opus-4-1-20250805"
