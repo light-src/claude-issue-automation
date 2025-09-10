@@ -43,7 +43,7 @@ jobs:
       - name: Implement feature with Claude
         uses: anthropics/claude-code-action@v1
         with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
             ## SuperClaude Framework - Feature Implementation
             **Persona**: Developer
@@ -195,7 +195,7 @@ jobs:
       - name: Fix bug with Claude
         uses: anthropics/claude-code-action@v1
         with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
             ## SuperClaude Framework - Bug Fix
             **Persona**: Debugger/QA Engineer
@@ -304,7 +304,7 @@ jobs:
       - name: Analyze and decompose feature
         uses: anthropics/claude-code-action@v1
         with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
             ## SuperClaude Framework - Feature Analysis & Decomposition
             **Persona**: Architect
@@ -438,7 +438,7 @@ jobs:
       - name: Execute Claude action
         uses: anthropics/claude-code-action@v1
         with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
             Action type: ${{ steps.determine_action.outputs.ACTION }}
             
